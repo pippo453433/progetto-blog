@@ -1,0 +1,62 @@
+
+.navbar {
+    background-color: #fff8f0;
+    border-bottom: 2px solid #ffe4c4;
+    padding: 10px 0;
+}
+.nav-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 15px;
+    margin: 0;
+}
+.nav-links a {
+    text-decoration: none;
+    color: #8b0000;
+    font-weight: bold;
+    transition: color 0.3s;
+}
+.nav-links a:hover {
+    color: #ff6600;
+}
+.logo {
+    font-size: 1.2em;
+    color: #8b0000;
+    font-weight: bold;
+    text-decoration: none;
+}
+html, body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+.img-ricetta {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+.recipe-card {
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    cursor: pointer;
+}
+.recipe-card:hover {
+    /* Ingrandisce la card del 3% e accentua l'ombra */
+    transform: scale(1.03); 
+    box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+}

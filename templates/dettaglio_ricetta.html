@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Dettaglio Ricetta{% endblock %}
+
+{% block content %}
+<main class="container">
+    <h1 class="titolo">{{ ricetta['titolo_ricetta'] }}</h1>
+    {% if ricetta['filename'] %}
+        <div class="img-container">
+            <img src="{{ url_for('static', filename='uploads/' ~ ricetta['filename']) }}" 
+                alt="Foto del piatto" 
+                class="img-ricetta">
+        </div>
+    {% endif %}
+
+    <div class="scheda-ricetta">
+        <p><strong>👨‍🍳 Autore:</strong> {{ ricetta['nome_utente'] }}</p>
+        <p class="descrizione">{{ ricetta['descrizione'] }}</p>
+        <p><strong>🍴 Categoria:</strong> {{ ricetta['nome_categoria'] or "Altro" }}</p>
+
+        <div class="like-section">
+            <form class="like-form" data-id="{{ ricetta['id_ricetta'] }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn like-btn">
+                    ❤️ <span class="likes-count">{{ ricetta['num_likes'] }}</span>
+                </button>
+            </form>
+        </div>
+
+        
+        {% if from_page  == 'dashboard' %}
+            <a href="{{ url_for('dashboard') }}" class="btn-back">← Torna al Diario</a>
+        {% else %}
+            <a href="{{ url_for('home') }}" class="btn-back">← Torna alla home</a>
+        {% endif %}
+
+    </div>
+</main>
+
+<style>
+.container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff8f0;
+    border-radius: 12px;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+}
+
+.titolo {
+    color: #b22222;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.descrizione {
+    margin: 20px 0;
+    color: #333;
+    line-height: 1.5;
+}
+
+.like-section {
+    text-align: center;
+    margin: 15px 0;
+}
+
+.btn {
+    background: #ffcc99;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    text-decoration: none;
+    color: #000;
+    font-weight: bold;
+    transition: background 0.2s ease;
+
+    
+}
+
+.btn:hover  {
+    background: #ffa64d;
+}
+.btn-back {
+    display: inline-block;
+    margin-top: 15px;
+    background: #eee;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #333;
+}
+.btn-back:hover {
+    background: #ddd;
+}
+
+</style>
+
+<script>
+document.querySelectorAll('.like-form').forEach(form => {
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const id = form.dataset.id;
+
+    let csrfTokenInput = form.querySelector('input[name="csrf_token"]');
+    let csrfToken = csrfTokenInput ? csrfTokenInput.value : null;
+    if (!csrfToken) {
+             // 🛑 Debug: Se il token non viene trovato, avvisa l'utente e ferma l'operazione
+        console.error("Token CSRF non trovato nel form! Assicurati che {{ csrf_token() }} sia presente.");
+        return; 
+    }
+    const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
+    formData.append('id_ricetta', id);
+
+    fetch(`/like/${id}`, {
+        method: 'POST',
+        body: formData,
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          form.querySelector('.likes-count').textContent = data.total_likes;
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(() => alert('Errore durante il like.'));
+  });
+});
+</script>
+{% endblock %}

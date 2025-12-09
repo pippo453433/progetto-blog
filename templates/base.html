@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Diario Ricette{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stile.css')}}">
+    
+    <!-- 1. Collegamento a Bootstrap CSS (CDN) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" 
+          rel="stylesheet" 
+          xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" 
+          crossorigin="anonymous">
+
+    <style>
+        /* Manteniamo solo gli stili cruciali e i messaggi flash */
+        body {
+            /* Sfondo pastello chiaro per le ricette */
+            background: #fff8f0; 
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Stili per i messaggi flash (riutilizziamo lo stile non-Bootstrap) */
+        .flash-message {
+            padding: 15px;
+            margin-top: 15px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 95%;
+            max-width: 1100px;
+            border-radius: .25rem;
+            font-weight: bold;
+        }
+
+        .flash-error {
+            background-color: #f8d7da; /* Bootstrap alert-danger-light */
+            color: #721c24; 
+            border: 1px solid #f5c6cb;
+        }
+
+        .flash-success {
+            background-color: #d4edda; /* Bootstrap alert-success-light */
+            color: #155724; 
+            border: 1px solid #c3e6cb;
+        }
+
+        /* Footer fissato al fondo della pagina */
+        .footer {
+            background-color: #e9e9e9;
+            color: #444;
+            padding: 20px 0;
+            margin-top: 40px;
+            border-top: 1px solid #ffe4c4;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .utente {
+            font-style: italic;
+            color: white; /* Assicuriamo che il testo sia visibile sulla navbar */
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Usiamo classi Bootstrap per la Navbar -->
+    <!-- bg-danger-subtle e navbar-dark per uno sfondo scuro (rosso) e testo chiaro -->
+    <header class="navbar navbar-expand-lg bg-danger p-3 shadow-sm">
+        <div class="container-fluid">
+            <!-- Logo a sinistra -->
+            <a class="navbar-brand text-white fw-bold fs-4" href="{{ url_for('home') }}">
+                🍝 Diario Ricette
+            </a>
+            
+            <!-- Bottone per il mobile (hamburger) -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Contenuto della navbar: links e azioni -->
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                    <!-- Navigazione Principale -->
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('mostra_categoria', nome_categoria='Primi') }}">Primi</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('mostra_categoria', nome_categoria='Secondi') }}">Secondi</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('mostra_categoria', nome_categoria='Dolci') }}">Dolci</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('mostra_categoria', nome_categoria='Altro') }}">Altro</a>
+                    </li>
+
+                    <!-- Link Dashboard e Nuova Ricetta (Solo Loggato) -->
+                    {% if session.get('ruolo') == 'adimin' %}
+                        <li class="nav-item">
+                            <a class="nav-link text-warning fw-bold" href="{{ url_for('dashboard_admin') }}">⚙️ Admin</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('nuova_ricetta') }}">Nuova Ricetta</a>
+                        </li>
+                    {% endif %}
+
+                    {% if session.get ('utente') %}
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('diario_ricette') }}">📔 Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('nuova_ricetta') }}">➕ Nuova Ricetta</a>
+                        </li>
+                    {% endif %}
+                </ul>
+
+                <!-- Sezione Azioni e Utente (a destra) -->
+                <div class="d-flex align-items-center">
+                    {% if session.get('utente') %}
+                        <!-- Messaggio di benvenuto utente loggato -->
+                        <span class="utente me-3">👋 Ciao, {{ session['utente'] }}!</span>
+                        <a class="btn btn-outline-light" href="{{ url_for('logout') }}">Logout</a>
+                    {% else %}
+                        <!-- Link Login/Registrati se non loggato -->
+                        <a class="btn btn-outline-light me-2" href="{{ url_for('login') }}">Login</a>
+                        <a class="btn btn-light" href="{{ url_for('register') }}">Registrati</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Usiamo un container per centrare e limitare la larghezza del contenuto -->
+    <main class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="row">
+                <div class="col-12">
+                    {% for category, message in messages %}
+                        <!-- le classi flash-error/success sono definite nel tag <style> -->
+                        <div class="flash-message flash-{{ category }} mb-3">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-1">🍽️ &copy; 2025 Il Mio Diario Ricette - Tutti Diritti Riservati</p>
+            <p class="mb-1"><em>“Ogni piatto racconta una storia.”</em></p>
+            <p class="mb-0">📧 Contattaci: <a href="mailto:info@diarioricette.it" class="text-danger-emphasis text-decoration-none">info@diarioricette.it</a></p>
+        </div>
+    </footer>
+
+    <!-- 2. Collegamento a Bootstrap JS (CDN) per funzionalità come il menu a scomparsa -->
+   
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% block title %}Registrazione{% endblock %}
+
+{% block content %}
+<style>
+/* Contenitore centrale */
+.register-container {
+    max-width: 450px;
+    margin: 50px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+}
+
+/* Input e pulsanti */
+.register-container input[type="text"],
+.register-container input[type="email"],
+.register-container input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.register-container button {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #b22222;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.register-container button:hover {
+    background-color: #800000;
+}
+
+/* Messaggi flash flottanti */
+.flash-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    z-index: 999;
+    min-width: 250px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0.95;
+}
+
+.flash-error { background-color: #b22222; }
+.flash-success { background-color: #228B22; }
+
+/* Lista regole password */
+#password-rules {
+    list-style:none;
+    padding:0;
+    margin-top:5px;
+    font-size:0.9em;
+}
+#password-rules li {
+    margin-bottom:3px;
+}
+</style>
+
+<div class="register-container">
+    <h2 style="text-align:center;">🧾 Registrazione</h2>
+
+    <form method="post" id="registerForm" style="display:flex; flex-direction:column; gap:15px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Nome:
+            <input type="text" name="nome" placeholder="Nome utente" required><br>
+        </label>
+
+        <label>Email:
+            <input type="email" name="email" id="Email" placeholder="Email" required>
+        </label>
+
+        <label>Password:
+            <input type="password" name="password" id="password" placeholder="Password" required>
+        </label>
+
+        <label>Conferma Password:
+            <input type="password" name="confirm_password" id="confirm_password" placeholder="Conferma Password" required>
+        </label>
+        
+
+        <label style="font-weight:normal; font-size:0.9em;">
+            <input type="checkbox" id="togglePwd"> Mostra password
+        </label>
+
+        <ul id="password-rules">
+            <li id="len">Minimo 8 caratteri ❌</li>
+            <li id="upper">Almeno una maiuscola ❌</li>
+            <li id="lower">Almeno una minuscola ❌</li>
+            <li id="num">Almeno un numero ❌</li>
+            <li id="sym">Almeno un simbolo (!@#$...) ❌</li>
+        </ul>
+
+        <button type="submit">Registrati</button>
+    </form>
+
+    <p style="text-align:center; margin-top:15px; font-size:0.9em;">
+        Hai già un account? <a href="{{ url_for('login') }}">Accedi qui</a>
+    </p>
+</div>
+
+<!-- Flash messages flottanti -->
+<div id="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message {{ 'flash-error' if category=='error' else 'flash-success' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+</div>
+
+<script>
+const ValidDomains = [
+    'gmail.com',
+    'yahoo.com',
+    'outlook.com',
+    'hotmail.com',
+    'libero.it',
+    'outlook.it',
+    'icloud.com'
+    
+]
+const emailInput = document.getElementById('Email');
+emailInput.addEventListener('blur', () => {
+    const email = emailInput.value.toLowerCase();
+    const parts = email.split('@');
+    
+    if (parts.length == 2) {
+        const domain = parts[1];
+        if (!ValidDomains.includes(domain)) {
+            console.error("Dominio email non valido:", domain);
+        }
+    }
+});
+            
+ 
+// Toggle password
+const pwd = document.getElementById('password');
+const confirm_password = document.getElementById('confirm_password');
+const toggle = document.getElementById('togglePwd');
+toggle.addEventListener('change', () => {
+    const type = toggle.checked ? 'text' : 'password';
+    pwd.type = type;
+    confirm_password.type = type;
+});
+
+// Controllo password in tempo reale
+const rules = {
+    len: val => val.length >= 8,
+    upper: val => /[A-Z]/.test(val),
+    lower: val => /[a-z]/.test(val),
+    num: val => /\d/.test(val),
+    sym: val => /[@$!%*?&]/.test(val)
+};
+
+const ruleElems = {
+    len: document.getElementById('len'),
+    upper: document.getElementById('upper'),
+    lower: document.getElementById('lower'),
+    num: document.getElementById('num'),
+    sym: document.getElementById('sym')
+};
+
+pwd.addEventListener('input', () => {
+    const val = pwd.value;
+    let valid = true;
+    for (const key in rules) {
+        if (rules[key](val)) {
+            if (!ruleElems[key].textContent.includes("✅")) {
+                ruleElems[key].textContent = ruleElems[key].textContent.replace("❌","✅");
+            }
+            ruleElems[key].style.color = "green";
+        } else {
+            if (!ruleElems[key].textContent.includes("❌")) {
+                ruleElems[key].textContent = ruleElems[key].textContent.replace("✅","❌");
+            }
+            ruleElems[key].style.color = "red";
+            valid = false;
+        }
+    }
+});
+
+// Blocca submit se password non valida
+const form = document.getElementById('registerForm');
+form.addEventListener('submit', (e) => {
+    
+    const emailVal = emailInput.value.toLowerCase();
+    const parts = emailVal.split('@'); 
+
+// CORREZIONE: Ora usiamo 'parts' (la variabile che contiene l'array)
+    if (parts.length !== 2 || !ValidDomains.includes(parts[1])) { 
+        e.preventDefault();
+        alert("Dominio email non valido. Usa un dominio comune come gmail.com, yahoo.com, outlook.com, ecc.");
+        return;
+    }
+    const val = pwd.value;
+    const confirmVal = confirm_password.value;
+    let valid = true;
+    for (const key in rules) {
+        if (!rules[key](val)) valid = false;
+    }
+    if (val !== confirmVal) {
+        alert("Le password non corrispondono!");
+        e.preventDefault();
+        return;
+    }
+    if (!valid) {
+        alert("La password non soddisfa tutti i requisiti.");
+        e.preventDefault();
+    }
+});
+
+// Rimuovi flash dopo 4 secondi
+setTimeout(() => {
+    const flashes = document.querySelectorAll('.flash-message');
+    flashes.forEach(f => f.remove());
+}, 4000);
+</script>
+{% endblock %}

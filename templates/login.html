@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<style>
+/* Contenitore centrale */
+.login-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+}
+
+/* Input e pulsanti */
+.login-container input[type="email"],
+.login-container input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.login-container button {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #b22222;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.login-container button:hover {
+    background-color: #800000;
+}
+
+/* Messaggi flash flottanti */
+.flash-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    z-index: 999;
+    min-width: 250px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0.95;
+}
+.login-container {
+    max-width: 400px; /* Limita la larghezza massima del form */
+    margin: 50px auto; /* Centra il contenitore orizzontalmente con margine superiore */
+    padding: 30px; /* Spazio interno attorno al contenuto */
+    background: #fff; /* Sfondo bianco per il contenitore */
+    border-radius: 12px; /* Angoli arrotondati */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* Ombra leggera */
+    font-family: Arial, sans-serif; /* Font per il testo all'interno */
+
+}
+.login-container input[type="email"],
+.login-container input[type="password"],
+.login-container input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box; /* Cruciale */
+}
+.login-container button {
+    /* Stili per il pulsante 'Login' */
+    margin-top: 15px; /* Spazio sopra il pulsante */
+    padding: 10px; /* Spazio interno nel pulsante */
+    background-color: #b22222; /* Colore di sfondo (Rosso scuro) */
+    color: white; /* Colore del testo */
+    border: none; /* Rimuovi il bordo predefinito */
+    border-radius: 6px; /* Angoli arrotondati */
+    font-weight: bold;
+    cursor: pointer; /* Cambia il cursore per indicare interattività */
+    transition: background 0.3s; /* Animazione fluida al passaggio del mouse */
+    width: 100%; /* Fai in modo che il pulsante occupi tutta la larghezza del contenitore */
+
+}
+
+.flash-error { background-color: #b22222; }
+.flash-success { background-color: #228B22; }
+</style>
+
+<div class="login-container">
+    <h2 style="text-align:center;">🔑 Login</h2>
+
+    <form method="post" style="display:flex; flex-direction:column; gap:15px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Email:
+            <input type="email" name="email" placeholder="Email" required>
+        </label>
+
+        <label>Password:
+            <input type="password" name="password" id="password" placeholder="Password" required>
+        </label>
+        
+
+        <label style="font-weight:normal; font-size:0.9em;">
+            <input type="checkbox" id="togglePwd"> Mostra password
+        </label>
+
+        <button type="submit">Login</button>
+    </form>
+
+    <p style="text-align:center; margin-top:15px; font-size:0.9em;">
+        Non hai un account? <a href="{{ url_for('register') }}">Registrati qui</a>
+    </p>
+</div>
+
+<!-- Flash messages flottanti -->
+<div id="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message {{ 'flash-error' if category=='error' else 'flash-success' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+</div>
+
+<script>
+// Toggle password
+const pwd = document.getElementById('password');
+const toggle = document.getElementById('togglePwd');
+toggle.addEventListener('change', () => {
+    pwd.type = toggle.checked ? 'text' : 'password';
+});
+
+// Rimuovi flash dopo 4 secondi
+setTimeout(() => {
+    const flashes = document.querySelectorAll('.flash-message');
+    flashes.forEach(f => f.remove());
+}, 4000);
+</script> 
+{% endblock %}

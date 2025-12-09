@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Ricette</title>
+    <!-- Carica Bootstrap CDN per lo stile -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Icone Font Awesome -->
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJ8uR07Jv3mQyvD3F+H/n1Q7A4K6nJd+u8d/gY8QyvC4A2P9H0Qj0H0Qj0H0Qj0H0Q"
+        crossorigin="anonymous" referrerpolicy="no-referrer" /> -->
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css"
+        crossorigin="anonymous" />
+
+    <style>
+        .card-stat {
+            transition: transform 0.2s;
+            border-radius: 0.5rem;
+        }
+
+        /* Rendi le card importanti cliccabili (come link) */
+        .card-stat.clickable {
+            cursor: pointer;
+        }
+
+        .card-stat:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Stili per la tabella su mobile */
+        @media (max-width: 768px) {
+            .table-responsive-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .table th,
+            .table td {
+                white-space: nowrap;
+                /* Impedisce che le celle vadano a capo */
+            }
+        }
+
+        .nav-tabs .nav-link.active {
+            font-weight: bold;
+            border-bottom: 3px solid var(--bs-primary);
+        }
+
+        /* Aggiungo uno stile per allineare le azioni */
+        .azione-form,
+        .azione-link {
+            display: inline-block;
+            /* Assicura che i link e i form stiano sulla stessa riga */
+            margin-right: 5px;
+            /* Piccolo margine tra i pulsanti */
+        }
+
+        /* Stile per tabelle con scroll forzato */
+        .table-responsive-scroll {
+            max-height: 400px;
+            /* Limite massimo per lo scroll */
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Presuppone l'inclusione della navbar tramite Flask -->
+    {% include 'navbar.html' %}
+
+    <div class="container mt-5 mb-5">
+        <h1 class="mb-4 text-center text-primary">⚙️ Dashboard Amministrativa</h1>
+        
+
+        <!-- Flash Messages (richiede get_flashed_messages nel backend) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category == 'error' and 'danger' or category }} alert-dismissible fade show"
+                    role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Tab Navigation (Schede) -->
+
+        <ul class="nav nav-tabs justify-content-center mb-4" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview"
+                    type="button" role="tab" aria-controls="overview" aria-selected="true">
+                    <i class="fa-solid fa-chart-line me-2"></i> Overview
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ricette-tab" data-bs-toggle="tab" data-bs-target="#ricette-gestione"
+                    type="button" role="tab" aria-controls="ricette-gestione" aria-selected="false">
+                    <i class="fa-solid fa-utensils me-2"></i> Gestione Ricette
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="utenti-tab" data-bs-toggle="tab" data-bs-target="#utenti-gestione"
+                    type="button" role="tab" aria-controls="utenti-gestione" aria-selected="false">
+                    <i class="fa-solid fa-users me-2"></i> Gestione Utenti
+                </button>
+            </li>
+            <!-- NUOVI TAB -->
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="categorie-tab" data-bs-toggle="tab" data-bs-target="#categorie-gestione"
+                    type="button" role="tab" aria-controls="categorie-gestione" aria-selected="false">
+                    <i class="fa-solid fa-tags me-2"></i> Gestione Categorie
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="likes-tab" data-bs-toggle="tab" data-bs-target="#likes-dettaglio"
+                    type="button" role="tab" aria-controls="likes-dettaglio" aria-selected="false">
+                    <i class="fa-solid fa-heart me-2"></i> Dettaglio Like
+                </button>
+            </li>
+            <!-- FINE NUOVI TAB -->
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="adminTabsContent">
+            <!-- 1. OVERVIEW TAB -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+                <h2 class="text-center mb-4 text-secondary">Statistiche Generali</h2>
+                <div class="row g-4">
+
+                    <!-- Utenti Registrati Card (Cliccabile) -->
+                    <div class="col-sm-6 col-md-3">
+                        <div class="card bg-primary text-white card-stat clickable shadow" data-bs-toggle="tab"
+                            data-bs-target="#utenti-gestione" role="button" aria-controls="utenti-gestione"
+                            title="Vai a Gestione Utenti">
+                            <div class="card-body text-center">
+                                <h5 class="card-title"><i class="fas fa-users fa-2x mb-2"></i></h5>
+                                <p class="card-text fs-4 fw-bold">{{ stats.utenti }}</p>
+                                <p class="card-text">Utenti Registrati</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ricette Totali Card (Cliccabile) -->
+                    <div class="col-sm-6 col-md-3">
+                        <div class="card bg-success text-white card-stat clickable shadow" data-bs-toggle="tab"
+                            data-bs-target="#ricette-gestione" role="button" aria-controls="ricette-gestione"
+                            title="Vai a Gestione Ricette">
+                            <div class="card-body text-center">
+                                <h5 class="card-title"><i class="fas fa-receipt fa-2x mb-2"></i></h5>
+                                <p class="card-text fs-4 fw-bold">{{ stats.ricette }}</p>
+                                <p class="card-text">Ricette Totali</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Like Totali Card (ORA CLICCABILE) -->
+                    <div class="col-sm-6 col-md-3">
+                        <div class="card bg-warning text-dark card-stat clickable shadow" data-bs-toggle="tab"
+                            data-bs-target="#likes-dettaglio" role="button" aria-controls="likes-dettaglio"
+                            title="Vai al Dettaglio Like">
+                            <div class="card-body text-center">
+                                <h5 class="card-title"><i class="fas fa-heart fa-2x mb-2"></i></h5>
+                                <p class="card-text fs-4 fw-bold">{{ stats.likes }}</p>
+                                <p class="card-text">Like Totali</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Categorie Attive Card (ORA CLICCABILE) -->
+                    <div class="col-sm-6 col-md-3">
+                        <div class="card bg-info text-dark card-stat clickable shadow" data-bs-toggle="tab"
+                            data-bs-target="#categorie-gestione" role="button" aria-controls="categorie-gestione"
+                            title="Vai a Gestione Categorie">
+                            <div class="card-body text-center">
+                                <h5 class="card-title"><i class="fas fa-tag fa-2x mb-2"></i></h5>
+                                <p class="card-text fs-4 fw-bold">{{ stats.categorie }}</p>
+                                <p class="card-text">Categorie Attive</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-4 text-muted text-center">Riepilogo dei dati principali della piattaforma.</p>
+            </div>
+
+
+
+
+            <!-- Aggiungi Nuova Categoria -->
+            <div class="tab-pane fade" id="categorie-gestione" role="tabpanel">
+                <h3 class="mb-3">Gestione Categorie</h3>
+
+                <div class="row mb-4">
+                    <div class="col-xl-6 col-lg-6">
+                        <div class="card-shadow rounded">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="m-0 fw-bold">Aggiungi Nuova Categoria</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('aggiungi_categoria') }}">
+                                    {{ categoria_form.hidden_tag() }}
+                                    <div class="form-group">
+                                        {{ categoria_form.name.label(class="form-label") }}
+                                        {{ categoria_form.name(class="form-control form-control-user", placeholder="es.
+                                        Primi, Secondi, Dolci") }}
+                                        {% for error in categoria_form.name.errors %}
+                                        <span class="text-danger small">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-icon-split">
+                                        <span class="icon text-white-50">
+                                            <i class="fas fa-plus"></i>
+                                        </span>
+                                        <span class="text">Aggiungi Categoria</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- 2. GESTIONE RICETTE TAB -->
+            <div class="tab-pane fade" id="ricette-gestione" role="tabpanel" aria-labelledby="ricette-tab">
+                <h3 class="mb-3">Tutte le Ricette ({{ ricette|length }})</h3>
+
+                <div class="table-responsive-scroll shadow-sm rounded-3">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr class="table-dark">
+                                <th scope="col">ID</th>
+                                <th scope="col">Titolo</th>
+                                <th scope="col">Autore</th>
+                                <th scope="col">Categoria</th>
+                                <th scope="col">Data</th>
+                                <th scope="col">Likes</th>
+                                <th scope="col">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ricetta in ricette %}
+                            <tr class="align-middle">
+
+                                <th scope="row">{{ ricetta.id_ricetta }}</th>
+                                <td>
+                                    <a href="{{ url_for('dettaglio_ricetta', id_ricetta=ricetta.id_ricetta) }}"
+                                        target="_blank" class="text-decoration-none text-primary fw-medium">
+                                        {{ ricetta.titolo_ricetta }}
+                                    </a>
+                                </td>
+                                <td>{{ ricetta.autore }}</td>
+                                <td><span class="badge bg-secondary">{{ ricetta.categoria if ricetta.categoria else
+                                        'Nessuna' }}</span></td>
+                                <td class="text-nowrap">
+                                    <span class="badge bg-secondary">{{ ricetta.data_creazione_ricetta }}</span>
+                                </td>
+                                <td><span class="badge bg-danger"><i class="fas fa-heart"></i> {{ ricetta.num_likes }}
+                                    </span></td>
+                                <td>
+                                    <a href="{{ url_for('modifica_ricetta', id_ricetta=ricetta.id_ricetta) }}"
+                                        class="azione-link btn btn-sm btn-warning" title="Modifica ricetta">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form class="azione-form d-inline" method="POST"
+                                        action="{{ url_for('elimina_ricetta', id_ricetta=ricetta.id_ricetta) }}"
+                                        onsubmit="return confermaEliminazione('ricetta', '{{ ricetta.titolo_ricetta }}')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Elimina Ricetta">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not ricette %}
+                                <tr>
+                                
+                                    <td colspan="7" class="text-center text-muted py-4">Nessuna ricetta trovata nel
+                                    database.
+                                </td>
+                                
+                                </tr>
+                            {% endif %}
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <!-- 3. GESTIONE UTENTI TAB -->
+            <div class="tab-pane fade" id="utenti-gestione" role="tabpanel" aria-labelledby="utenti-tab">
+                <h3 class="mb-3">Tutti gli Utenti ({{ utenti|length }})</h3>
+                
+                <div class="table-responsive-scroll shadow-sm rounded-3">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr class="table-dark">
+                                <th scope="col">ID Utente</th>
+                                <th scope="col">Nome Utente</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Ruolo</th>
+                                <th scope="col">Data Iscrizione</th>
+                                <th scope="col">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for utente in utenti %}
+                            <tr>
+                                <th scope="row">{{ utente.id_utente}}</th>
+                                <td>{{ utente.username }}</td>
+                                <td><a href="mailto:{{ utente.email }}">{{ utente.email }}</a></td>
+                                <td>
+                                    {% if utente.ruolo == 'admin' %}
+                                    <span class="badge bg-primary"><i class="fas fa-crown me-1"></i> Admin</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Utente</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ utente.data_registrazione | datetimeformat }}</td>
+                                <td>
+                                    <!-- Pulsante Modifica Ruolo (Blu) - ENDPOINT: modifica_ruolo (CORRETTO) -->
+                                    <form class="azione-form" method="POST"
+                                        action="{{ url_for('modifica_ruolo', id_utente=utente.id_utente) }}">
+                                        {% if csrf_token() %}
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        {% endif %}
+                                        {% if current_user.id !=utente.id_utente %}
+                                            <button type="submit" class="btn btn-sm btn-info text-white"
+                                                title="Cambia Ruolo a {{ 'Utente' if utente.ruolo == 'admin' else 'Admin' }}">
+                                                    <i class="fa-solid fa-user-tag"></i>
+                                            </button>
+                                        {% else %}
+                                            <button type="button" class="btn btn-sm btn-secondary" disabled
+                                                title="Non puoi modificare il tuo ruolo">
+                                                    <i class="fa-solid fa-user-tag"></i>
+                                            </button>
+                                        {% endif %}
+                            
+                                    </form>
+                        
+                                        <!-- FORM DI ELIMINAZIONE UTENTE (Cestino Rosso) - ATTIVO -->
+                                    <form class="azione-form" method="POST"
+                                        action="{{ url_for('elimina_utente', id_utente=utente.id_utente) }}"
+                                        onsubmit="return confermaEliminazione('utente', '{{ utente.nome_utente }}')">
+                                        <!-- Token CSRF essenziale per la sicurezza di Flask-WTF -->
+                                            {% if csrf_token() %}<input type="hidden" name="csrf_token"
+                                            value="{{ csrf_token() }}">
+                                            {% endif %}
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Elimina Utente">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    Nessun utente trovato nel database.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <div class="tab-pane fade" id="likes-dettaglio" role="tabpanel"
+                aria-labelledby="dettaglioLike-tab">
+                <h3 class="mb-4">Analisi dei Like</h3>
+                <div class="row">
+                    <!-- TOP 10 RICETTE -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-warning text-white fw-bold">Top 10 Ricette per Like</div>
+                            <div class="card-body p-0">
+                                {% if ricette_top_like %}
+                                <ul class="list-group list-group-flush">
+                                    {% for ricetta in ricette_top_like %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <a href="{{ url_for('dettaglio_ricetta', id_ricetta=ricetta.id_ricetta) }}"
+                                            target="_blank" class="text-decoration-none text-primary fw-medium">
+                                            {{ loop.index }}. {{ ricetta.titolo_ricetta }}
+                                        </a>
+                                        <span class="badge bg-danger rounded-pill"><i class="fas fa-heart"></i> {{ ricetta.num_likes }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="text-center text-muted py-3">Ancora nessuna ricetta con like registrato.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ULTIMI 50 LIKE -->
+                     <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-secondary text-white fw-bold">Ultimi 50 Like Registrati</div>
+                            <div class="card-body p-0">
+                                {% if ultimi_like_registrati %}
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Utente</th>
+                                            <th scope="col">Ricetta</th>
+                                            <th scope="col">Ora</th>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for like in ultimi_like_registrati %}
+                                        <tr>
+                                            <td>{{ like.utente }}</td>
+                                            <td>
+                                                <a href="{{ url_for('dettaglio_ricetta', id_ricetta=like.id_ricetta) }}" class="text-decoration-none">
+                                                    {{ like.ricetta }}
+                                                </a>
+
+                                            </td>
+                                            <td>{{ like.timestamp }}</td>
+                                        </tr>
+                                        {% endfor %}
+
+                                    </tbody>
+                                </table>
+                                {% else %}
+                                <p class="text-center text-muted py-3">Nessun like recente da visualizzare.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                     </div>
+                </div>
+            </div>
+
+                <!-- 4. GESTIONE CATEGORIE TAB (NUOVO CONTENUTO) -->
+            <div class="tab-pane fade" id="categorie-gestione" role="tabpanel" aria-labelledby="categorie-tab">
+                <h3 class="mb-3">
+                    Gestione Categorie ({{ categoria_per_tabella|length }})
+                </h3>
+
+                <div class="row mb-4">
+                        <!-- Colonna Form Aggiunta -->
+                    <div class="col-xl-6 col-lg-6">
+                        <div class="card shadow-sm rounded">
+                            <div class="card-header bg-primary text-white "><h6 class="m-0 fw-bold">Aggiungi Nuova Categoria</h6></div>
+                            <div class="card-body">
+                                    <!-- Il form usa la variabile WTForm per il CSRF -->
+                                <form method="POST" action="{{ url_for('aggiungi_categoria') }}">
+                                    {% if categoria_form.csrf_token %}{{ categoria_form.csrf_token }}{% endif %}
+                                        <div class="mb-3">
+                                            {{ categoria_form.name.label(class="form-label") }}
+                                            {{ categoria_form.name(class="form-control", placeholder="es. Primi Piatti,
+                                            Dolci, Vegano") }}
+                                            {% for error in categoria_form.name.errors %}
+                                                <span class="text-danger small">{{ error }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-icon-split">
+                                            <span class="icon text-white-50">
+                                                <i class="fas fa-plus me-1"></i> 
+                                            </span>
+                                            <span class="text">Aggiungi Categoria</span>
+                                        </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                 
+                <!-- Colonna Tabella Categorie -->
+                    <div class="card shadow-sm rounded">
+                        <div class="table-responsive shadow-sm rounded-3 border">
+                            <table class="table table-striped table-hover align-middle mb-0">
+                                <thead>
+                                    <tr class="table-dark">
+                                        <th scope="col">ID</th>
+                                        <th scope="col">Nome Categoria</th>
+                                        <th scope="col">Data Creazione</th>
+                                        <th scope="col">Ricette Associate</th>
+                                        <th scope="col">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if categorie_per_tabella %}
+                                        {% for cat in categoria_per_tabella%}
+                                            <tr class="align-middle">
+                                                <th scope="row">{{ cat.id }}</th>
+                                                <td id="categoria-name-{{ cat.id }}">{{ cat.name }}</td>
+                                                <td>N/A</td>
+                                                <td>
+                                                    <span class="badge bg-secondary">{{ cat.ricette_associate}}</span>
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-warning me-1"
+                                                        title="Modifica Categoria" 
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modificaCategoriaModal" 
+                                                        data-id="{{ cat.id }}"
+                                                        data-name="{{ cat.name }}">
+                                                          <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    {% set ricette_count = cat.ricette_associate %}
+                                                        <form class="d-inline" method="POST"
+                                                                action="{{ url_for('elimina_categoria', id_categoria=cat.id) }}">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                                            <button type="submit" class="btn btn-sm btn-danger btn-elimina-categoria"
+                                                                title="Elimina Categoria" 
+                                                                {% if ricette_count> 0 %}disable{% endif %}
+                                                                data-name-categoria="{{ cat.name }}"
+                                                                data-ricette-count="{{ ricette_count }}"
+                                                                data-id-categoria="{{ cat.id }}">
+                                                                <i class="fas fa-trash-alt"></i>
+                                                            </button>
+
+
+                                                        </form>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                    <tr class="align-middle">
+                                        <td colspan="5" class="text-center text-muted">
+                                            Nessuna categoria definita
+                                        </td>
+
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+               
+                
+    <!-- FINE NUOVI CONTENUTI TAB -->
+    
+
+    <!-- MODAL PER CONFERMA ELIMINAZIONE CATEGORIA -->
+    <div class="modal fade" id="modificaCategoriaModal" tabindex="-1" aria-labelledby="modificaCategoriaModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content shadow-sm">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold" id="modificaCategoriaModalLabel">Modifica Categoria</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="modificaCategoriaForm" method="POST" action="{{ url_for('modifica_categoria', id_categoria=0) }}">
+                    {% if categoria_form.csrf_token %}{{ categoria_form.csrf_token }}{% endif %}
+                    <input type="hidden" name="id_categoria" id="modal-id-categoria" value="">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="modal-name-categoria" class="form-label">Nome Categoria</label>
+                            <!-- Usiamo la form di modifica passata dal contesto Flask -->
+                            {{ categoria_form.name(class="form-control", id="modal-name-categoria") }}
+                        </div>
+                        <div class="alert alert-info mt-3" role="alert">
+                            Stai modificando la categoria ID: <span id="modal-display-id" class="fw-bold"></span>.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-warning">Salva Modifiche</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- FINE MODAL MODIFICA CATEGORIA -->
+
+    <!-- Carica Bootstrap JS per il funzionamento delle schede -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+
+    <script>
+        function confermaEliminazione(tipo, name) {
+            // Usiamo `confirm()` che è l'equivalente più rapido del modale di conferma in un ambiente di prototipazione.
+            return confirm("⚠️ Sei sicuro di voler eliminare definitivamente l'" + tipo + " " + name + "?\nQuesta azione non può essere annullata.");
+        }
+
+        // Funzione specifica per l'eliminazione Categoria
+        // (Questa funzione è ora chiamata dal listener, non dall'attributo onsubmit)
+        function confermaEliminazioneCategoria(name, count) {
+            if (count > 0) {
+                // Nota: Rimuovo l'alert e uso solo return false, come da standard
+                alert("❌ Impossibile eliminare la categoria '" + name + "' perché è associata a " + count + " ricette.\nSposta o elimina prima le ricette associate.");
+                return false;
+            }
+            return confirm("⚠️ Sei sicuro di voler eliminare definitivamente la categoria '" + name + "'?\nQuesta azione non può essere annullata.");
+        }
+
+        // --- LOGICA AGGIUNTA/MODIFICATA ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // 1. GESTIONE CONFERMA ELIMINAZIONE CATEGORIA (NUOVA LOGICA PULITA)
+            document.querySelectorAll('.btn-elimina-categoria').forEach(button => {
+                button.addEventListener('click', function (e) {
+                    // Intercetta l'evento di click per eseguire prima la conferma
+                    e.preventDefault();
+
+                    // 1.1 Recupera i dati dagli attributi data-*
+                    const nameCategoria = this.getAttribute('data-name-categoria');
+                    // Converti la stringa in un numero intero
+                    const ricetteCount = parseInt(this.getAttribute('data-ricette-count'));
+
+                    // 1.2 Chiama la funzione di conferma
+                    if (confermaEliminazioneCategoria(nameCategoria, ricetteCount)) {
+                        // Se la funzione restituisce true (l'utente ha cliccato OK), invia il form
+                        this.closest('form').submit();
+                    }
+                });
+            });
+
+            // 2. Listener per la navigazione tramite card (già esistente)
+            document.querySelectorAll('.card-stat.clickable').forEach(card => {
+                card.addEventListener('click', function () {
+                    const targetId = this.getAttribute('data-bs-target');
+                    if (targetId) {
+                        // Rimuovi l'hash '#' per trovare l'elemento del pulsante tab
+                        const targetTabButton = document.querySelector(`[data-bs-target="${targetId}"]`);
+
+                        if (targetTabButton) {
+                            // Usiamo Bootstrap's Tab API per cambiare la scheda
+                            const tab = new bootstrap.Tab(targetTabButton);
+                            tab.show();
+                            // Assicurati che il pulsante sia marcato come attivo
+                            document.querySelectorAll('.nav-link').forEach(btn => btn.classList.remove('active'));
+                            targetTabButton.classList.add('active');
+                        }
+                    }
+                });
+            });
+
+            // 3. Logica per popolare il Modal di Modifica Categoria (già esistente)
+            // 3. Logica per popolare il Modal di Modifica Categoria (CORRETTO)
+            const modal = document.getElementById('modificaCategoriaModal');
+            if (modal) {
+                modal.addEventListener('show.bs.modal', event => {
+                    const button = event.relatedTarget;
+                    const id_categoria = button.getAttribute('data-id');
+                    const name_categoria = button.getAttribute('data-name');
+
+                    // 1. Aggiorna l'URL del form action in modo dinamico
+                    const form = modal.querySelector('form');
+                    if (form) {
+                        // TRUCCO: Inizializziamo l'URL con ID fittizio (0) e lo sostituiamo.
+                        // Questo evita il BuildError al caricamento statico della pagina.
+                        form.action = "{{ url_for('modifica_categoria', id_categoria=0) }}".replace('/0', '/' + id_categoria);
+                    }
+
+                    // 2. Popola i campi del modale
+                    const inputName = modal.querySelector('#modal-name-categoria');
+                    if (inputName) {
+                        inputName.value = name_categoria;
+                    }
+
+                    const inputId = modal.querySelector('#modal-id-categoria');
+                    if (inputId) {
+                        inputId.value = id_categoria;
+                    }
+
+                    // Aggiorna l'ID visualizzato nel badge
+                    const displayId = modal.querySelector('#modal-display-id');
+                    if (displayId) {
+                        displayId.textContent = id_categoria;
+                    }
+                });
+            }
+            
+        });
+
+
+    </script>
+</body>
+
+</html>

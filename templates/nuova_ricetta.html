@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Nuova Ricetta - Diario Ricette{% endblock %}
+{% block content %}
+<main class="container">
+    <h1 class="titolo">🍴 Aggiungi una nuova ricetta</h1>
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="titolo">Titolo</label>
+        <input type="text" name="titolo" id="titolo" required>
+        <label for="descrizione">Descrizione</label>
+        <textarea name="descrizione" id="descrizione" rows="5" required></textarea>
+        <label for="id_categoria">Categoria</label>
+        <select name="id_categoria" id="id_categoria" required>
+            {% for categoria in categorie %}
+                <option value="{{ categoria.id_categoria }}">{{ categoria.name}}</option>
+                {% endfor %}
+
+        </select>
+        <input type="submit" value="Aggiungi" class="btn">
+    </form>
+</main>
+<style>
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.titolo {
+    text-align: center;
+    color: #b22222;
+    margin-bottom: 20px;
+}
+label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+input[type="text"], textarea, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+input[type="submit"] {
+    margin-top: 15px;
+    background: #ffcc99;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+input[type="submit"]:hover {
+     background: #ffa64d;
+}
+</style>
+{% endblock %}

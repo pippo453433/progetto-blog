@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Il tuo Diario Ricette{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="titolo">👨‍🍳 Il tuo Diario Ricette</h1>
+    <h2>Le tue ricette</h2>
+
+    
+    {% if ricette_mie %}
+        <div class="griglia-ricette">
+            {% for ricetta in ricette_mie %}
+            <div class="ricetta-card" data-id="{{ ricetta['id_ricetta'] }}">
+                {% if ricetta['filename'] %}
+                <div class="img-container">
+                    <img src="{{ url_for('static', filename='uploads/' ~ ricetta['filename']) }}" 
+                        alt="Foto del piatto" 
+                        class="img-ricetta">
+                </div>
+                {% endif %}
+                <h3>{{ ricetta['titolo_ricetta'] }}</h3>
+                <p class="descrizione">{{ ricetta['descrizione'][:150] }}{% if ricetta['descrizione']|length > 150 %}...{% endif %}</p>
+                <p class="categoria">Categoria: {{ ricetta['categoria_nome'] or "Altro" }}</p>
+                <p>❤️ Totale Like: <span class="likes-count">{{ ricetta['num_likes'] }}</span></p>
+
+                
+                <div class="azioni">
+                    <a href="{{ url_for('dettaglio_ricetta', id_ricetta=ricetta['id_ricetta'], from_page='dashboard') }}" class="btn">📖 Dettaglio</a>
+
+                    
+                    <form class="like-form" action="{{ url_for('toggle_like', id_ricetta=ricetta['id_ricetta'])}}" data-id="{{ ricetta['id_ricetta'] }}" method="POST">
+                        <!-- IL TOKEN QUI È CORRETTO -->
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                        <button type="submit" class="btn like-btn">❤️ <span class="likes-count">{{ ricetta['num_likes'] }}</span></button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="vuoto">😢 Non hai ancora creato nessuna ricetta.</p>
+    {% endif %}
+    <hr>
+
+    <h2 class="sottotitolo">❤️ Ricette che mi piacciono</h2>
+    {% if ricette_like %}
+        <div class="lista-ricette">
+            {% for ricetta in ricette_like %}
+            <div class="ricetta-card" data-id="{{ ricetta['id_ricetta'] }}">
+                
+                {% if ricetta['filename'] %}
+                <div class="img-container">
+                    <img src="{{ url_for('static', filename='uploads/' ~ ricetta['filename']) }}" 
+                        alt="Foto del piatto" 
+                        class="img-ricetta">
+                </div>
+                {% endif %}
+
+                <h3>{{ ricetta['titolo_ricetta'] }}</h3>
+                <p class="autore">👨‍🍳 di <strong>{{ ricetta['autore_nome'] }}</strong></p>
+                <p class="descrizione">{{ ricetta['descrizione'][:150] }}{% if ricetta['descrizione']|length > 150 %}...{% endif %}</p>
+
+                <p class="categoria">Categoria: {{ ricetta['categoria_nome'] or "Altro" }}</p>
+                <p>❤️ Totale Like: <span class="likes-count">{{ ricetta['num_likes'] }}</span></p>
+                <div class="azioni">
+                    <a href="{{ url_for('dettaglio_ricetta', id_ricetta=ricetta['id_ricetta'], from_page='dashboard') }}" class="btn">📖 Dettaglio</a>
+                    
+                    <form class="like-form" action="{{ url_for('toggle_like', id_ricetta=ricetta['id_ricetta']) }}" data-id="{{ ricetta['id_ricetta'] }}" method="POST"> <!-- Metodo POST aggiunto -->
+                        <!-- TOKEN CORRETTO: Inserito come campo nascosto all'interno del form -->
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        
+                        <button type="submit" class="btn like-btn">❤️ <span class="likes-count">{{ ricetta['num_likes'] }}</span></button>
+                    </form>
+                </div>
+                
+
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="vuoto">💤 Non hai ancora messo "mi piace" a nessuna ricetta.</p>
+    {% endif %}
+</div>
+
+<style>
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.titolo {
+    text-align: center;
+    color: #b22222;
+    margin-bottom: 30px;
+}
+.sottotitolo {
+    color: #8b0000;
+    margin-top: 40px;
+    margin-bottom: 15px;
+}
+.griglia-ricette {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+.ricetta-card {
+    background: #fff8f0;
+    border: 1px solid #ffe4c4;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ricetta-card:hover {
+    transform: scale(1.05);
+    box-shadow: 4px 4px 20px rgba(0,0,0,0.2);
+}
+.descrizione {
+    color: #444;
+    font-size: 0.9em;
+    margin: 10px 0;
+}
+.azioni {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.btn {
+    background: #ffcc99;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    text-decoration: none;
+    color: #000;
+}
+.btn:hover {
+    background: #ffa64d;
+}
+.vuoto {
+    text-align: center;
+    color: #666;
+    margin-top: 10px;
+}
+
+/* Stili aggiunti per visualizzare l'immagine nella card */
+.img-container {
+    height: 150px;
+    overflow: hidden;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.img-ricetta {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Assicura che l'immagine copra il container senza distorcere */
+}
+</style>
+<script>
+document.querySelectorAll('.like-form').forEach(form => {
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const id = form.dataset.id;
+    let csrfTokenInput = form.querySelector('input[name="csrf_token"]');
+    let csrfToken = csrfTokenInput ? csrfTokenInput.value : null;
+    if (!csrfToken) {
+        // Questo debug è utile, ma non strettamente necessario per la funzionalità
+        console.error("Token CSRF non trovato!");
+        return; 
+    }
+    const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
+    formData.append('id_ricetta', id);
+
+    fetch(`/like/${id}`, {
+        method: 'POST',
+        body: formData,
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          form.querySelector('.likes-count').textContent = data.total_likes;
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(() => alert('Errore durante il like.'));
+  });
+});
+</script>
+
+{% endblock %}

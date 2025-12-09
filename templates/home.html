@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Diario Ricette{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-5 text-center text-danger fw-bold">Le Nostre Ricette</h1>
+
+    {% if ricette %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for ricetta in ricette %}
+                <!-- Ogni elemento della griglia -->
+                <div class="col">
+                    <!-- Card di Bootstrap: h-100 per assicurare la stessa altezza, shadow per effetto 3D -->
+                    <div class="card h-100 shadow-sm border-0 recipe-card">
+                        <div class="card-body d-flex flex-column">
+                            
+                            <!-- Titolo della Ricetta -->
+                            <h5 class="card-title text-danger mb-2 fw-bold">{{ ricetta['titolo_ricetta'] }}</h5>
+                            
+                            <!-- Autore e Categoria -->
+                            <h6 class="card-subtitle mb-3 text-muted">
+                                👨‍🍳 di <strong>{{ ricetta['nome_utente'] }}</strong>
+                            </h6>
+                            <p class="card-text small text-muted mb-2">
+                                Categoria: <span class="badge text-bg-secondary">{{ ricetta['nome_categoria'] or "Altro" }}</span>
+                            </p>
+
+                            <!-- Descrizione con Troncamento (CSS) -->
+                            <p class="card-text text-secondary mb-3 text-truncate-3-lines">
+                                {{ ricetta['descrizione'][:150] }}
+                                {% if ricetta['descrizione']|length > 150 %}...{% endif %}
+                            </p>
+                            
+                            <!-- Azioni e Like - Allineati in basso grazie a mt-auto -->
+                            <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                                <!-- Bottone Dettaglio -->
+                                <a href="{{ url_for('dettaglio_ricetta', id_ricetta=ricetta['id_ricetta']) }}" class="btn btn-outline-danger btn-sm">
+                                    📖 Dettaglio
+                                </a>
+                                
+                                <!-- Form Like -->
+                                <form class="like-form" data-id="{{ ricetta['id_ricetta'] }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> 
+                                    <button type="submit" class="btn btn-link text-danger p-0 border-0 fs-5">
+                                        ❤️ <span class="likes-count small">{{ ricetta['num_likes'] }}</span>
+                                    </button>
+                                </form>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+    {% else %}
+        <p class="text-center lead">😢 Non ci sono ricette disponibili. Inizia aggiungendone una!</p>
+    {% endif %}
+</div>
+
+<!-- CSS e Script JavaScript restano identici e sono corretti -->
+<style>
+    .text-truncate-3-lines {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        height: 3.5em; 
+    }
+    
+    
+    .recipe-card {
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        cursor: pointer;
+    }
+    
+    .recipe-card:hover {
+        transform: scale(1.03); 
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+    }
+</style>
+
+<script>
+document.querySelectorAll('.like-form').forEach(form => {
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+        const id = form.dataset.id;
+        let csrfTokenInput = form.querySelector('input[name="csrf_token"]');
+        let csrfToken = csrfTokenInput ? csrfTokenInput.value : null;
+        if (!csrfToken) {
+            console.error("Token CSRF non trovato nel form!");
+            return; 
+        }
+        const formData = new FormData();
+        formData.append('csrf_token', csrfToken);
+        formData.append('id_ricetta', id);
+
+        fetch(`/like/${id}`, {
+            method: 'POST',
+            body: formData, 
+        })
+          .then(res => {
+              if (res.ok) {
+                  return res.json();
+              }
+              throw new Error('Risposta di rete non valida.');
+          })
+          .then(data => {
+            if (data.success) {
+              form.querySelector('.likes-count').textContent = data.total_likes;
+            } else {
+              console.warn(data.message);
+              alert('Errore nel like: ' + data.message);
+            }
+          })
+          .catch(error => {
+              console.error('Errore durante l\'operazione di like:', error);
+              alert('Errore nel mettere like. Controlla la console per i dettagli.');
+          });
+    });
+});
+</script>
+
+{% endblock %}

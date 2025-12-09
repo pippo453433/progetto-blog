@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Il mio Diario Ricette{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="titolo">🍝 Il tuo Diario Ricette</h1>
+
+    <h2>Le tue ricette</h2>
+    {% if mie_ricette %}
+        <div class="lista-ricette">
+            {% for ricetta in mie_ricette %}
+            <div class="ricetta-card" data-id="{{ ricetta['id_ricetta'] }}">
+                <h3>{{ ricetta['titolo_ricetta'] }}</h3>
+                <p class="descrizione">
+                    {{ ricetta['descrizione'][:150] }}
+                    {% if ricetta['descrizione']|length > 150 %}...{% endif %}
+                </p>
+                <p class="categoria">Categoria: {{ ricetta['nome_categoria'] or "Altro" }}</p>
+                <p>❤️ Totale Like: <span class="likes-count">{{ ricetta['num_likes'] }}</span></p>
+
+                <div class="azioni">
+                    <a href="{{ url_for('dettaglio_ricetta', id_ricetta=ricetta['id_ricetta'], from_page='dashboard') }}" class="btn">📖 Dettaglio</a>
+                    <form class="like-form" data-id="{{ ricetta['id_ricetta'] }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn like-btn">❤️ <span class="likes-count">{{ ricetta['num_likes'] }}</span></button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="vuoto">😢 Non hai ancora aggiunto ricette.</p>
+    {% endif %}
+    <hr>
+
+    <h2>Le ricette a cui hai messo like</h2>
+    {% if ricette_likes %}
+        <div class="lista-ricette">
+            {% for ricetta in ricette_likes %}
+            <div class="ricetta-card" data-id="{{ ricetta['id_ricetta'] }}">
+                <h3>{{ ricetta['titolo_ricetta'] }}</h3>
+                <p class="autore">👨‍🍳 di <strong>{{ ricetta['nome_utente'] }}</strong></p>
+                <p class="descrizione">
+                    {{ ricetta['descrizione'][:150] }}
+                    {% if ricetta['descrizione']|length > 150 %}...{% endif %}
+                </p>
+                <p class="categoria">Categoria: {{ ricetta['nome_categoria'] or "Altro" }}</p>
+                <p>❤️ Totale Like: <span class="likes-count">{{ ricetta['num_likes'] }}</span></p>
+
+                <div class="azioni">
+                    <a href="{{ url_for('dettaglio_ricetta', id_ricetta=ricetta['id_ricetta'], from_page='dashboard') }}" class="btn">📖 Dettaglio</a>
+                    <form class="like-form" data-id="{{ ricetta['id_ricetta'] }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn like-btn">❤️ <span class="likes-count">{{ ricetta['num_likes'] }}</span></button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="vuoto">💤 Non hai ancora messo like a nessuna ricetta.</p>
+    {% endif %}
+</div>
+
+<style>
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.titolo {
+    text-align: center;
+    color: #b22222;
+    margin-bottom: 30px;
+}
+.lista-ricette {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.ricetta-card {
+    background: #fff8f0;
+    border: 1px solid #ffe4c4;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.ricetta-card:hover {
+    transform: scale(1.03);
+    box-shadow: 4px 4px 20px rgba(0,0,0,0.2);
+}
+.ricetta-card h3 {
+    color: #8b0000;
+}
+.descrizione {
+    font-size: 0.95em;
+    color: #444;
+    margin: 10px 0;
+}
+.categoria {
+    font-style: italic;
+    color: #555;
+    margin-bottom: 5px;
+}
+.azioni {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.btn {
+    background: #ffcc99;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: #000;
+    text-decoration: none;
+}
+.btn:hover {
+    background: #ffa64d;
+}
+.vuoto {
+    text-align: center;
+    font-size: 1em;
+    color: #666;
+    margin-top: 10px;
+}
+</style>
+
+<script>
+document.querySelectorAll('.like-form').forEach(form => {
+    form.addEventListener('submit', function(e){
+        e.preventDefault();
+        const id = this.dataset.id;
+        const csrfToken = this.querySelector('input[name="csrf_token"]').value;
+        const formData = new FormData();
+        formData.append('csrf_token', csrfToken);
+        formData.append('id_ricetta', id);
+
+        fetch(`/like/${id}`, {
+            method: 'POST',
+            body:formData,
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success){
+                this.querySelector('.likes-count').textContent = data.total_likes;
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(() => alert('Errore di rete durante il like.'));
+    });
+    
+});
+</script>
+{% endblock %}

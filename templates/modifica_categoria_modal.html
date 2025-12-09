@@ -1,0 +1,25 @@
+<!-- MODALE PER LA MODIFICA DELLA CATEGORIA -->
+<div class="modal fade" id="modificaCategoriaModal" tabindex="-1" aria-labelledby="modificaCategoriaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="modificaCategoriaModalLabel">Modifica Categoria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <form id="modificaCategoriaForm" method="POST" action="">
+                <div class="modal-body">
+                    <p>Stai modificando la categoria ID: <strong id="categoria-id-display"></strong></p>
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome Categoria</label>
+                        {{ form.nome(class="form-control", id="nome-categoria-input") }}
+                        {% for error in form.nome.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {{ form.csrf_token }}
+                    {{ form.submit(class="btn btn-warning w-100", value="Salva Modifiche") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
